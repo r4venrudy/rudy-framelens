@@ -1,0 +1,8 @@
+/bin/
+/dist/
+/stage/
+/artifacts/
+*.test
+*.prof
+coverage.out
+__pycache__/
