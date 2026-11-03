@@ -75,5 +75,6 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           (cd release-assets && sha256sum framelens-* > SHA256SUMS.txt)
+          python .github/scripts/release_checksums.py release-assets
           python .github/scripts/release_guard.py release-assets
           gh release create "$GITHUB_REF_NAME" release-assets/framelens-* release-assets/SHA256SUMS.txt --title "Rudy FrameLens $GITHUB_REF_NAME" --notes-file docs/RELEASE.md --prerelease
