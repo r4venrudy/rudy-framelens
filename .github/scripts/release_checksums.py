@@ -61,7 +61,7 @@ def verify_checksums(directory: Path) -> None:
         seen.add(key)
         listed.add(name)
 
-        if not name.endswith(ARCHIVE_SUFFIXES):
+        if not name.lower().endswith(ARCHIVE_SUFFIXES):
             raise ValueError(f"expected a regular release archive for {name}")
         entries.append((name, expected))
 
