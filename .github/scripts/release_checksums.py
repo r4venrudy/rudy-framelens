@@ -26,13 +26,14 @@ def staged_archives(directory: Path) -> set[str]:
     return names
 
 
-def verify_checksums(directory: Path) -> None:
+def verify_checksums(directory: Path) -> dict:
     candidates = [directory / name for name in MANIFEST_NAMES]
     manifests = [p for p in candidates if p.exists() or p.is_symlink()]
     if len(manifests) != 1 or manifests[0].is_symlink() or not manifests[0].is_file():
         raise ValueError("expected exactly one regular SHA-256 manifest")
 
-    with manifests[0].open("rb") as stream:
+    manifest=manifests[0]
+    with manifest.open("rb") as stream:
         contents = stream.read(MAX_MANIFEST + 1)
     if not contents or len(contents) > MAX_MANIFEST:
         raise ValueError("SHA-256 manifest is empty or oversized")
@@ -87,9 +88,11 @@ def verify_checksums(directory: Path) -> None:
             raise ValueError("staged release exceeds the aggregate checksum limit")
         bounded_assets.append((asset, name, expected, size))
 
+    verified=[]
     for asset, name, expected, size in bounded_assets:
         hasher = hashlib.sha256()
         remaining = size
+        asset_size=remaining
         with asset.open("rb") as stream:
             while chunk := stream.read(min(65536, remaining + 1)):
                 if len(chunk) > remaining:
@@ -101,9 +104,12 @@ def verify_checksums(directory: Path) -> None:
         digest = hasher.hexdigest()
         if digest != expected.lower():
             raise ValueError(f"SHA-256 mismatch for {name}")
+        verified.append(dict(name=name,bytes=asset_size,sha256=digest))
     if staged_archives(directory) != staged:
         raise ValueError("staged archive inventory changed while hashing")
 
+
+    return dict(schema="rudy.release.checksum-report/v1",manifest=manifest.name,manifest_sha256=hashlib.sha256(contents).hexdigest(),archive_count=len(verified),total_bytes=total_bytes,archives=sorted(verified,key=lambda r:r["name"]))
 
 def main():
     from checksum_cli import checksum_main
